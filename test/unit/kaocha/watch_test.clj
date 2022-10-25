@@ -1,5 +1,7 @@
 (ns kaocha.watch-test
   (:require [clojure.test :refer :all]
+            [clojure.spec.alpha :as s]
+            [kaocha.config :as c]
             [kaocha.watch :as w]
             [kaocha.platform :as platform]
             [kaocha.test-util :as util]
@@ -186,3 +188,18 @@
     (is (= "[(.)]\n1 tests, 1 assertions, 0 failures.\n\n[watch] watching stopped.\n"
            @out-str))
     (is (= 0 @exit-code))))
+
+(deftest reload-test
+  (testing "reloading a configuration file produces valid config"
+    (let [orig-config (c/load-config2 "test/unit/kaocha/config/loaded-test.edn")
+          [reloaded-config _] (w/reload-config orig-config nil)] 
+      (is (s/valid? :kaocha/config reloaded-config)
+          (s/explain :kaocha/config reloaded-config))))
+  (testing "reloading a configuration file produces the same config"
+    (let [orig-config (c/load-config2 "test/unit/kaocha/config/loaded-test.edn")
+          [reloaded-config _] (w/reload-config orig-config nil)] 
+      (is (= orig-config reloaded-config))))
+  (testing "reloading a configuration file produces the same config when using a profile"
+    (let [orig-config (c/load-config2 "test/unit/kaocha/config/loaded-test-profile.edn" :test {})
+          [reloaded-config _] (w/reload-config orig-config nil)] 
+      (is (= orig-config reloaded-config)))))
